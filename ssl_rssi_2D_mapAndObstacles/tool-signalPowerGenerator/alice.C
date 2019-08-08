@@ -5,6 +5,7 @@
 
 #include "ToolNodesGenerator.hh"
 #include "ToolMapGenerator.hh"
+#include "ToolSignalPowerGenerator.hh"
 
 using namespace std;
 
@@ -40,6 +41,22 @@ int main()
 	//double constant = map->GetConstant(0,0);
 	//cout<<"constant "<<constant<<endl;
 
+	// step 2 
+	ToolSignalPowerGenerator * spg = new ToolSignalPowerGenerator("spg");
+	spg->SetToolMapGenerator(map);
+
+	vector<double> A_anchor, A_node;
+	A_anchor.push_back(-100);
+	A_anchor.push_back(-100);
+	A_anchor.push_back(0);
+	A_node.push_back(100);
+	A_node.push_back(100);
+	A_node.push_back(0);
+
+	double Power_node = 1e4;
+	double Power_anchor = spg->GetSignalPower(Power_node,A_anchor,A_node);
+
+	/*
 	int bin[3] = {100,100,1};
 	double min[3] = {-100,-100,0};
 	double max[3] = {100,100,0};
@@ -80,9 +97,7 @@ int main()
 	}
 
 	write.close();
-
-
-	// 
+	*/
 
 	return 1;
 }
