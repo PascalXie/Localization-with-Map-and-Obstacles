@@ -45,5 +45,7 @@ class NewtonsOptimizationManager : virtual public UserOptimizationManager
 
 		// output data
 		ofstream *write;
+
+
 };
 #endif

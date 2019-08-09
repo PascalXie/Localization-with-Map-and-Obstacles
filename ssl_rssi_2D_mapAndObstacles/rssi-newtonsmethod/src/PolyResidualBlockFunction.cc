@@ -11,6 +11,14 @@ PolyResidualBlockFunction::PolyResidualBlockFunction(string name, vector<double>
 {
 	observations_.clear();
 	observations_ = observations;
+
+	// Build map and signal power generators
+	map_ = new ToolMapGenerator("Map","2D"); 
+	map_->ImportSamples(); 
+
+	spg_ = new ToolSignalPowerGenerator("spg");
+	spg_->SetToolMapGenerator(map_); 
+	spg_->SetFactor(1e-1);
 }
 
 //-------------------------
@@ -38,14 +46,23 @@ bool PolyResidualBlockFunction::ResidualFunction(vector<double> variables, vecto
 		return false;
 	}
 
-	// observations_[0] : distanceSquared 
-	// observations_[1] : ax , anchor location x
-	// observations_[2] : ay , anchor location y
+	// observations_[0] : S_ao, anchor observed power, by node 1
+	// observations_[1] : S_n, node power, by node 1 
+	// observations_[2] : S_ao, anchor observed power, by node 2
+	// observations_[3] : S_n, node power, by node 2 
+	// observations_[4] : ax , anchor location x
+	// observations_[5] : ay , anchor location y
 
-	// varialbles[0] : xx, node location x
-	// varialbles[1] : xy, node location y
+	// varialbles[0] : xx, node location x, node 1
+	// varialbles[1] : xy, node location y, node 1
+	// varialbles[2] : xx, node location x, node 2
+	// varialbles[3] : xy, node location y, node 2
 
-	// residual = (ax-xx)*(ax-xx) + (ay-xy)*(ay-xy) - distanceSquared
+
+	// S_a = spg_->GetSignalPower, the computed signal power observed by the anchor
+
+	// residual = sum of (S_a - S_ao)^2 for all nodes
+	// residual = (S_a_n1 - S_ao_n1)^2 + (S_a_n2 - S_ao_n2)^2
 
 	int TotalNodeNumber = 10;
 	if(variables.size()!=TotalNodeNumber*2)
@@ -54,33 +71,54 @@ bool PolyResidualBlockFunction::ResidualFunction(vector<double> variables, vecto
 		return false;
 	}
 
+	// anchor postion
 	double ax = observations_[SizeObservations_-2];
 	double ay = observations_[SizeObservations_-1];
+	double az = 0;
 
+	vector<double> A_Anchor; // position of the anchor
+	A_Anchor.push_back(ax);
+	A_Anchor.push_back(ay);
+	A_Anchor.push_back(az);
+
+	// power
 	double residual_0 = 0;
 	for(int i=0;i<TotalNodeNumber;i++)
 	{
 		int NodeID = i;
 		double distanceSquared = observations_[NodeID];
-		int xID = 0 + NodeID*2;
-		int yID = 1 + NodeID*2;
+		int obsID = 0 + NodeID*2;  // signal power observed
+		int souID = 1 + NodeID*2; // signal power at the source, i.e. the node
 
-		double xx = variables[xID];
-		double xy = variables[yID];
+		double S_ao = observations_[obsID];
+		double S_node = observations_[souID]; // signal power at the anchor
 
-		double residual_node_0 = sqrt((ax-xx)*(ax-xx) + (ay-xy)*(ay-xy)) - sqrt(distanceSquared);
-		double residual_node = residual_node_0*residual_node_0;
+		double xx = variables[obsID];
+		double xy = variables[souID];
 
+		vector<double> A_Node; // position of the node 
+		A_Node.push_back(xx);
+		A_Node.push_back(xy);
+		A_Node.push_back(0);
+
+		double Ln_S_a = spg_->GetLogSignalPower(S_node,A_Anchor,A_Node);
+
+		double Ln_S_ao = log(S_ao);
+
+		double residual_node = (Ln_S_a-Ln_S_ao)*(Ln_S_a-Ln_S_ao);
 		residual_0 += residual_node;
+
 
 		/*
 		// debug
 		cout<<"Debug class PolyResidualBlockFunction::ResidualFunction"<<endl;
 		cout<<"NodeID "<<NodeID<<endl;
 		cout<<"xx "<<xx<<", xy "<<xy<<endl;
-		cout<<"ax "<<ax<<", ay "<<ay<<endl;
-		cout<<"distanceSquared "<<distanceSquared<<endl;
+		cout<<"Anchor : "<<A_Anchor[0]<<", "<<A_Anchor[1]<<", "<<A_Anchor[2]<<endl;
+		cout<<"Node : "<<A_Node[0]<<", "<<A_Node[1]<<", "<<A_Node[2]<<"; "<<S_node<<endl;
+		cout<<"Power Observed : "<<S_ao<<", computed "<<S_a<<endl;
 		*/
+
 	}
 
 	residual_0 = residual_0/double(TotalNodeNumber);
@@ -112,4 +150,10 @@ void PolyResidualBlockFunction::ShowResidualFunction()
 	{
 		cout<<"    ID "<<i<<"; Observation "<<observations_[i]<<endl;
 	}
+}
+
+
+void PolyResidualBlockFunction::SetToolSignalPowerGenerator(ToolSignalPowerGenerator *spg)
+{
+	spg_ = spg;
 }

@@ -74,6 +74,7 @@ void NewtonsOptimizationManager::Iteration(vector<double> VariablesPrevious)
 	// step 2.1 : get Jacobian Matrix, i.e. Gradient, the frist order derivatives of Cost function
 	vector<double> Jacobian;
 	bool isJacobianGood = costFunction_->GradientFunction(VariablesPrevious_,Jacobian);
+
 	if(!isJacobianGood)
 	{
 		cout<<"An Error happend in NewtonsOptimizationManager::Iteration with Jacobian"<<endl;
@@ -115,6 +116,7 @@ void NewtonsOptimizationManager::Iteration(vector<double> VariablesPrevious)
 		HessianMatrix_(rowID,columnID) = Hessian[ID];
 		HessianMatrix_(columnID,rowID) = Hessian[ID];
 	}
+
 
 	// step 3 : choose Newton's method or steepest descent method
 	// if Hessian Matrix is positive definite, choose Newton's methos

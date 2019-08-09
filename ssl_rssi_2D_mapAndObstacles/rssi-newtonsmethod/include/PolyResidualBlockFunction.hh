@@ -6,6 +6,9 @@
 #include <vector>
 #include <cmath>
 
+#include "ToolMapGenerator.hh"
+#include "ToolSignalPowerGenerator.hh"
+
 #include "UserResidualBlockFunction.hh"
 
 using namespace std;
@@ -25,11 +28,20 @@ class PolyResidualBlockFunction : virtual public UserResidualBlockFunction
 		//
 		virtual void ShowResidualFunction();
 
+	public: 
+		void SetToolSignalPowerGenerator(ToolSignalPowerGenerator *spg);
+
+
 	private:
 		string name_;
 		vector<double> observations_;
 		int SizeObservations_;
 		int SizeVariables_;
 		int SizeResiduals_;
+
+
+	private:
+		ToolMapGenerator *map_;
+		ToolSignalPowerGenerator * spg_; 
 };
 #endif

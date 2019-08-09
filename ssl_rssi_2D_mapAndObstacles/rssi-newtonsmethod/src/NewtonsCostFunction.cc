@@ -71,7 +71,7 @@ bool NewtonsCostFunction::CostFunction(vector<double> variables, vector<double> 
 
 		/*
 		// debug
-		cout<<"debug ResidualID "<<ResidualID<<", residuals_current size "<<residuals_current.size()<<", residuals_current "<<residuals_current[0]<<endl;
+		cout<<"debug NewtonsCostFunction::CostFunction ResidualID "<<ResidualID<<", residuals_current size "<<residuals_current.size()<<", residuals_current "<<residuals_current[0]<<endl;
 		*/
 
 		// get cost function value squared
@@ -173,7 +173,6 @@ bool NewtonsCostFunction::GetOneSecondOrderDerivative(int FirstPartialDerivative
 	// step 0 : set step length - delta
 	double delta_FirstVar = delta_;
 	double delta_SecondVar = delta_;
-
 
 	// step 1 : calculate
 	double theSecondOrderDerivativeValue = 0;

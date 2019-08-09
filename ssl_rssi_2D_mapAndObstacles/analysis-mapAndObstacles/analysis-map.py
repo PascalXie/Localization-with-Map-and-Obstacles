@@ -38,5 +38,11 @@ for ID in range(1,binx*biny*binz+1):
 df = pd.DataFrame({'x':xs,'y': ys,'Constant':constants})
 pt = df.pivot_table(index='y', columns='x', values='Constant', aggfunc=np.sum)
 
-sns.heatmap(pt, linewidths = 0.00)
+f, (ax1) = plt.subplots(figsize = (9,8),nrows=1)
+cmap = sns.diverging_palette(200,20,sep=20,as_cmap=True)
+sns_plot = sns.heatmap(pt, linewidths = 0.00, ax = ax1, cmap=cmap, xticklabels=8, yticklabels=8)
+
+ax1.set_title('Wi-Fi Power Attenuation Constant Distribution')
+ax1.set_xlabel('X')
+ax1.set_ylabel('Y')
 plt.show()

@@ -62,8 +62,8 @@ int main()
 
 
 	// step 3 : generate anchors and nodes 
-	int NumberAnchors = 400;
-	int NumberNodes = 1;
+	int NumberAnchors = 20;
+	int NumberNodes = 10;
 	ToolNodesGenerator * data = new ToolNodesGenerator("data", NumberAnchors, NumberNodes, "2D");
 	data->SetBoundaryX(-100,100);
 	data->SetBoundaryY(-100,100);
@@ -78,8 +78,8 @@ int main()
 	ofstream write("observations.txt");
 	write<<"NumberAnchors "<<NumberAnchors<<" NumberNodes "<<NumberNodes<<endl;
 
-	for(int j=0;j<Data_Nx.size();j++)
 	for(int i=0;i<Data_Ax.size();i++)
+	for(int j=0;j<Data_Nx.size();j++)
 	{
 		int NodeID = j;
 		int AnchorID = i;
@@ -110,7 +110,7 @@ void NodesGenerator()
 	vector<double> Nzs;
 
 	// concrete
-	ToolNodesGenerator * ng = new ToolNodesGenerator("ng_c", 4000, 1, "2D");
+	ToolNodesGenerator * ng = new ToolNodesGenerator("ng_c", 100, 1, "2D");
 	ng->SetBoundaryX(-50,50);
 	ng->SetBoundaryY(-100,100);
 	ng->Initialize();
@@ -118,7 +118,7 @@ void NodesGenerator()
 	ng->GetAnchors(Nxs_c, Nys_c, Nzs);
 
 	// air
-	ToolNodesGenerator * nga = new ToolNodesGenerator("ng_a1", 2000, 1, "2D");
+	ToolNodesGenerator * nga = new ToolNodesGenerator("ng_a1", 50, 1, "2D");
 	nga->SetBoundaryX(-100,-50);
 	nga->SetBoundaryY(-100,100);
 	nga->Initialize();
@@ -127,7 +127,7 @@ void NodesGenerator()
 
 
 	// air2
-	ToolNodesGenerator * nga2 = new ToolNodesGenerator("ng_a2", 2000, 1, "2D");
+	ToolNodesGenerator * nga2 = new ToolNodesGenerator("ng_a2", 50, 1, "2D");
 	nga2->SetBoundaryX(50,100);
 	nga2->SetBoundaryY(-100,100);
 	nga2->Initialize();

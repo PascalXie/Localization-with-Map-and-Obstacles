@@ -14,29 +14,164 @@
 #include "SteepestOptimizationManager.hh"
 #include "NewtonsOptimizationManager.hh"
 
+#include "ToolMapGenerator.hh"
+#include "ToolSignalPowerGenerator.hh"
+
 
 using namespace std;
 
+bool PowerRSSI_residualTest();
+bool PowerRSSI();
 int RSSI();
-void test3();
-void test4();
-double observation1(double ob1);
-double observation2(double ob1);
 
 int main()
 {
 	cout<<"Hello "<<endl;
 
-	// steepest descent method
-	//test3();
-
-	// Newton's method
-	//test4();
-
-	// RSSI
-	int isRSSIGood = RSSI();
+	bool isBuildGood = PowerRSSI();
 
 	return 1;
+}
+
+bool PowerRSSI_residualTest()
+{
+	int observationsSize = 4;
+	int varialbeSize = 2;
+	int residualSize = 1;
+
+	vector<double> obs;
+	obs.push_back(1.88945e-16);
+	obs.push_back(10000);
+	obs.push_back(-82.4191);
+	obs.push_back(48.3789);
+
+	vector<double> variables;
+	variables.push_back(84.6693);
+	variables.push_back(56.9547);
+
+	vector<double> residual;
+
+	PolyResidualBlockFunction *poly = new PolyResidualBlockFunction("poly",obs,observationsSize,varialbeSize,residualSize);
+	bool isPolyGood = poly->ResidualFunction(variables,residual);
+
+	cout<<"Residual "<<residual[0]<<endl;
+
+	return true;
+}
+
+bool PowerRSSI()
+{
+	string filename = "../observations.txt";
+	ifstream file(filename.c_str());
+
+
+	if(file.fail())
+	{
+		cout<<"Can not find the file \" "<<filename<<" \""<<endl;
+		return 0;
+	}
+
+	int NumberAnchors = 0;
+	int NumberNodes = 0;
+	string temp;
+	file>>temp>>NumberAnchors>>temp>>NumberNodes;
+	cout<<"NumberAnchors "<<NumberAnchors<<" ; NumberNodes "<<NumberNodes<<endl;
+
+	int AnchorID = 0;
+	int NodeID = 0;
+	double ax = 0; 
+	double ay = 0; 
+	double az = 0;
+	double xx = 0;
+	double xy = 0;
+	double xz = 0;
+	double S_anchorOb = 0; // signal Power
+	double S_node = 0; // signal power
+
+	vector<int> AnchorIDs;
+	vector<int> NodeIDs;
+	vector<double> S_anchors, S_nodes;
+	vector<double> axs, ays, xxs, xys;
+
+	while(!file.eof())
+	{
+		file>>AnchorID>>ax>>ay>>az>>S_anchorOb>>NodeID>>xx>>xy>>xz>>S_node;
+
+		if(file.eof()) break;
+
+		cout<<"AnchorID "<<AnchorID<<", ax "<<ax<<", ay "<<ay<<", az "<<az<<"; Power "<<S_anchorOb<<endl;
+		cout<<"NodeID "<<NodeID<<", xx "<<xx<<", xy "<<xy<<", xz "<<xz<<"; Power "<<S_node<<endl;
+
+		AnchorIDs.push_back(AnchorID);
+		NodeIDs.push_back(NodeID);
+		axs.push_back(ax);
+		ays.push_back(ay);
+		xxs.push_back(xx);
+		xys.push_back(xy);
+		S_anchors.push_back(S_anchorOb);
+		S_nodes.push_back(S_node);
+	}
+
+	file.close();
+
+
+	//
+	// Optimization 
+	//
+	int observationsSize = 2 + 2*NumberNodes;
+	int residualSize = 1;
+	int varialbeSize = 2*NumberNodes;
+
+	UserOptimizationManager * manager = new NewtonsOptimizationManager("NewtonsMethod",observationsSize,varialbeSize,residualSize);
+
+	// set variables
+	vector<double> variables;
+	for(int i=0;i<varialbeSize;i++)
+	{
+		variables.push_back(0.);
+	}
+	manager->SetUserInitialization(variables);
+
+	// set cost function
+	UserCostFunction* costFunction = new NewtonsCostFunction("costFunction",observationsSize,varialbeSize,residualSize);
+
+	// get observations
+	for(int i=0;i<NumberAnchors;i++)
+	{
+		int AnchorID = i;
+		vector<double> observation_current;
+		for(int j=0;j<NumberNodes;j++)
+		{
+			int NodeID = j;
+			int S_anchorObID = AnchorID*NumberNodes + NodeID;
+			observation_current.push_back(S_anchors[S_anchorObID]);
+			observation_current.push_back(S_nodes[S_anchorObID]);
+		}
+		int ID = AnchorID*NumberNodes + 0 ;
+		observation_current.push_back(axs[ID]);
+		observation_current.push_back(ays[ID]);
+		costFunction->AddResidualBlock(observation_current);
+	}
+
+	//
+	cout<<" "<<endl;
+	cout<<"alice SetUserInitialization"<<endl;
+	manager->SetUserInitialization(costFunction);
+
+	//
+	double UserReferencedLength = 70.;
+	manager->SetUserReferencedLength(UserReferencedLength);
+
+	// 
+	double UserReferencedEpsilon = 1e2;
+	manager->SetUserEpsilonForTerminating(UserReferencedEpsilon);
+
+	// initialize
+	cout<<" "<<endl;
+	cout<<"Initialize "<<endl;
+	manager->Initialize();
+
+	return true;
 }
 
 int RSSI()
@@ -181,124 +316,4 @@ int RSSI()
 
 
 	return 1;
-}
-
-void test3()
-{
-	int observationsSize = 2;
-	int residualSize = 1;
-	int varialbeSize = 4;
-	UserOptimizationManager * sd = new SteepestOptimizationManager("SteepestDecentMethod",observationsSize,varialbeSize,residualSize);
-
-	// set variables
-	vector<double> variables;
-	variables.push_back(1.+101);
-	variables.push_back(2.+101);
-	variables.push_back(3.-101);
-	variables.push_back(4.-101);
-	sd->SetUserInitialization(variables);
-
-	// set cost function
-	UserCostFunction* costFunction = new SteepestCostFunction("costFunction",observationsSize,varialbeSize,residualSize);
-
-	// get observations
-	int LengthObservations = 5;
-	double observation_xs[5];
-	double observation_ys[5];
-	for(int i=0;i<LengthObservations;i++)
-	{
-		double x = double(i)-2;
-		double y = observation2(x);
-		observation_xs[i] = x;
-		observation_ys[i] = y;
-		cout<<"Observation ID "<<i<<", x "<<observation_xs[i]<<", y "<<observation_ys[i]<<endl;
-	}
-
-	for(int i=0;i<LengthObservations;i++)
-	{
-		vector<double> observation_current;
-		observation_current.push_back(observation_xs[i]);
-		observation_current.push_back(observation_ys[i]);
-		costFunction->AddResidualBlock(observation_current);
-	}
-
-	//
-	cout<<" "<<endl;
-	cout<<"alice SetUserInitialization"<<endl;
-	sd->SetUserInitialization(costFunction);
-
-
-	// initialize
-	cout<<" "<<endl;
-	cout<<"Initialize "<<endl;
-	sd->Initialize();
-}
-
-void test4()
-{
-	int observationsSize = 2;
-	int residualSize = 1;
-	int varialbeSize = 4;
-	UserOptimizationManager * manager = new NewtonsOptimizationManager("NewtonsMethod",observationsSize,varialbeSize,residualSize);
-
-	// set variables
-	vector<double> variables;
-	variables.push_back(1.+101.);
-	variables.push_back(2.+101.);
-	variables.push_back(3.-101.);
-	variables.push_back(4.-101.);
-	manager->SetUserInitialization(variables);
-
-	// set cost function
-	UserCostFunction* costFunction = new NewtonsCostFunction("costFunction",observationsSize,varialbeSize,residualSize);
-
-	// get observations
-	int LengthObservations = 5;
-	double observation_xs[5];
-	double observation_ys[5];
-	for(int i=0;i<LengthObservations;i++)
-	{
-		double x = double(i)-2;
-		double y = observation2(x);
-		observation_xs[i] = x;
-		observation_ys[i] = y;
-		cout<<"Observation ID "<<i<<", x "<<observation_xs[i]<<", y "<<observation_ys[i]<<endl;
-	}
-
-	for(int i=0;i<LengthObservations;i++)
-	{
-		vector<double> observation_current;
-		observation_current.push_back(observation_xs[i]);
-		observation_current.push_back(observation_ys[i]);
-		costFunction->AddResidualBlock(observation_current);
-	}
-
-	//
-	cout<<" "<<endl;
-	cout<<"alice SetUserInitialization"<<endl;
-	manager->SetUserInitialization(costFunction);
-
-
-	// initialize
-	cout<<" "<<endl;
-	cout<<"Initialize "<<endl;
-	manager->Initialize();
-}
-
-double observation1(double ob1)
-{
-	double as[3] = {1,2,3};
-	double x = ob1;
-	double y = (as[0] + as[1]*x + as[2]*x*x);
-
-	return y;
-}
-
-double observation2(double ob1)
-{
-	double as[4] = {1,2,3,4};
-	double x = ob1;
-	double y = (as[0] + as[1]*x + as[2]*x*x + as[3]*x*x*x);
-
-	return y;
 }
