@@ -92,7 +92,7 @@ void NodesGenerator()
 	vector<double> Nzs;
 
 	// concrete
-	ToolNodesGenerator * ng = new ToolNodesGenerator("ng_c", 4000, 1, "2D");
+	ToolNodesGenerator * ng = new ToolNodesGenerator("ng_c", 400, 1, "2D");
 	ng->SetBoundaryX(-50,50);
 	ng->SetBoundaryY(-100,100);
 	ng->Initialize();
@@ -100,7 +100,7 @@ void NodesGenerator()
 	ng->GetAnchors(Nxs_c, Nys_c, Nzs);
 
 	// air
-	ToolNodesGenerator * nga = new ToolNodesGenerator("ng_a1", 2000, 1, "2D");
+	ToolNodesGenerator * nga = new ToolNodesGenerator("ng_a1", 200, 1, "2D");
 	nga->SetBoundaryX(-100,-50);
 	nga->SetBoundaryY(-100,100);
 	nga->Initialize();
@@ -109,7 +109,7 @@ void NodesGenerator()
 
 
 	// air2
-	ToolNodesGenerator * nga2 = new ToolNodesGenerator("ng_a2", 2000, 1, "2D");
+	ToolNodesGenerator * nga2 = new ToolNodesGenerator("ng_a2", 200, 1, "2D");
 	nga2->SetBoundaryX(50,100);
 	nga2->SetBoundaryY(-100,100);
 	nga2->Initialize();
