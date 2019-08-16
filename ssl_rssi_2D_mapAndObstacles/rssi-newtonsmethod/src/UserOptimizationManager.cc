@@ -82,6 +82,11 @@ void UserOptimizationManager::SetAlphaStepLength(double alpha_stepLength)
 	alpha_stepLength_ = alpha_stepLength;
 }
 
+void UserOptimizationManager::GetVariables(vector<double> &Variables)
+{
+	Variables.clear();
+	Variables = VariablesCurrent_;
+}
 //-------------------------
 // Protected : Step length computing
 //-------------------------
