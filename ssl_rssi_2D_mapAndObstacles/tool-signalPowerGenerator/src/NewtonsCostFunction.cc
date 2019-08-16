@@ -96,6 +96,7 @@ bool NewtonsCostFunction::CostFunction(vector<double> variables, vector<double> 
 	}
 
 
+	/*
 	// For inequality constrained optimizaiton 
 	// interior point method is used 
 	// with Barrior function
@@ -110,6 +111,7 @@ bool NewtonsCostFunction::CostFunction(vector<double> variables, vector<double> 
 		CostFunctionValues_current[ResidualDimensionID] = CostFunctionValues_current[ResidualDimensionID] - 1./t*log(-1.*xy+100.);
 		CostFunctionValues_current[ResidualDimensionID] = CostFunctionValues_current[ResidualDimensionID] - 1./t*log( 1.*xy+100.);
 	}
+	*/
 	
 
 	CostFunctionValues = CostFunctionValues_current;

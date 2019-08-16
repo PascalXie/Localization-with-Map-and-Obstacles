@@ -38,52 +38,22 @@ bool PolyResidualBlockFunction::ResidualFunction(vector<double> variables, vecto
 		return false;
 	}
 
-	// observations_[0] : distanceSquared 
-	// observations_[1] : ax , anchor location x
-	// observations_[2] : ay , anchor location y
+	// observations_[0] : strength 
+	// observations_[1] : referenced strength
+	// observations_[2] : distance
 
-	// varialbles[0] : xx, node location x
-	// varialbles[1] : xy, node location y
+	// varialbles[0] : gamma, path loss exponent 
 
-	// residual = (ax-xx)*(ax-xx) + (ay-xy)*(ay-xy) - distanceSquared
+	// residual = P_ob - P_ref + 10.*gamma*log(distance/d_0)
+	double d_0 = 1;
+	double P_ob = observations_[0];
+	double P_ref = observations_[1];
+	double distance = observations_[2];
 
-	int TotalNodeNumber = 10;
-	if(variables.size()!=TotalNodeNumber*2)
-	{
-		cout<<"An error happend in PolyResidualBlockFunction::ResidualFunction : Node Number Wrong"<<endl;
-		return false;
-	}
-
-	double ax = observations_[SizeObservations_-2];
-	double ay = observations_[SizeObservations_-1];
+	double gamma = variables[0];
 
 	double residual_0 = 0;
-	for(int i=0;i<TotalNodeNumber;i++)
-	{
-		int NodeID = i;
-		double distanceSquared = observations_[NodeID];
-		int xID = 0 + NodeID*2;
-		int yID = 1 + NodeID*2;
-
-		double xx = variables[xID];
-		double xy = variables[yID];
-
-		double residual_node_0 = sqrt((ax-xx)*(ax-xx) + (ay-xy)*(ay-xy)) - sqrt(distanceSquared);
-		double residual_node = residual_node_0*residual_node_0;
-
-		residual_0 += residual_node;
-
-		/*
-		// debug
-		cout<<"Debug class PolyResidualBlockFunction::ResidualFunction"<<endl;
-		cout<<"NodeID "<<NodeID<<endl;
-		cout<<"xx "<<xx<<", xy "<<xy<<endl;
-		cout<<"ax "<<ax<<", ay "<<ay<<endl;
-		cout<<"distanceSquared "<<distanceSquared<<endl;
-		*/
-	}
-
-	residual_0 = residual_0/double(TotalNodeNumber);
+	residual_0 = P_ob - P_ref + 10.*gamma*log(distance/d_0);
 
 	residuals.clear();
 	residuals.push_back(residual_0);

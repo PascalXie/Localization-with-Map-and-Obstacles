@@ -99,6 +99,80 @@ double ToolMapGenerator::GetConstant(double x, double y, double z)
 //---------------------------
 // Public
 //---------------------------
+void ToolMapGenerator::OutputSamples(string filename)
+{
+	// debug
+	if(IsMapTypeCorrect_==false) 
+	{
+		cout<<"An error happend in ToolMapGenerator::OutputSamples"<<endl;
+		return ;
+	}
+
+	// output samples
+	ofstream write(filename);
+
+	for(int i=0;i<xs_.size();i++)
+	{
+		write<<xs_[i]<<" "<<ys_[i]<<" "<<zs_[i]<<" "<<constants_[i]<<endl;
+	}
+
+	write.close();
+}
+
+bool ToolMapGenerator::ImportSamples(string filename)
+{
+	ifstream read(filename);
+
+	// debug
+	if(read.fail())
+	{
+		cout<<"An error happend in ToolMapGenerator::ImportSamples"<<endl;
+		cout<<"Data file \" "<<filename<<" \" did not exist"<<endl;
+		return false;
+	}
+
+	// clear 
+	xs_.clear();
+	ys_.clear();
+	zs_.clear();
+	constants_.clear();
+
+	// read
+	while(!read.eof())
+	{
+		double x, y, z, catt;
+		read>>x>>y>>z>>catt;
+
+		if(read.eof()) break;
+
+		xs_.push_back(x);
+		ys_.push_back(y);
+		zs_.push_back(z);
+		constants_.push_back(catt);
+
+		/*
+		// debug
+		cout<<x<<" "<<y<<" "<<z<<" "<<catt<<endl;
+		*/
+	}
+
+	read.close();
+
+	/*
+	// debug
+	cout<<"Debug ToolMapGenerator::ImportSamples"<<endl;
+	for(int i=0;i<xs_.size();i++)
+	{
+		cout<<"Sample ID "<<i<<": "<<xs_[i]<<", "<<ys_[i]<<", "<<zs_[i]<<"; "<<constants_[i]<<endl;
+	}
+	*/
+
+	return true;
+}
+
+//---------------------------
+// Public
+//---------------------------
 void ToolMapGenerator::GetMap(int binx, double minx, double maxx,int biny, double miny, double maxy,int binz, double minz, double maxz)
 {
 	if(MapType_=="2D") {

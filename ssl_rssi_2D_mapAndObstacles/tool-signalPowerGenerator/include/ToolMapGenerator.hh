@@ -20,6 +20,10 @@ class ToolMapGenerator
 		double GetConstant(double x, double y, double z=0);
 
     public:
+		void OutputSamples(string filename="Data_MapNodeSamples.txt");
+		bool ImportSamples(string filename="../Data_MapNodeSamples.txt");
+
+    public:
 		// user's tool
 		void GetMap(int binx, double minx, double maxx,int biny, double miny, double maxy,int binz=1, double minz=0, double maxz=0);
 

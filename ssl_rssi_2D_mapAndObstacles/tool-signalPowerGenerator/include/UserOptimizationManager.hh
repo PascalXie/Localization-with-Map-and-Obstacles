@@ -32,6 +32,8 @@ class UserOptimizationManager
 		void SetUserReferencedLength(double UserReferencedLength);
 		// for teriminating the loop
 		void SetUserEpsilonForTerminating(double UserEpsilonForTerminating);
+		// for User
+		void GetVariables(vector<double> &Variables);
 
 	protected:
 		// line search methods
