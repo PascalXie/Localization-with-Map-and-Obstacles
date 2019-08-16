@@ -7,8 +7,9 @@ ToolSignalPowerGenerator::ToolSignalPowerGenerator(string name)
 :	name_(name),
 	isMapGood_(false),
 	binSize_(100),
-	C_(1e-1)
+	C_(1.)
 {
+
 	/*
 	// debug
 	cout<<"Name "<<name_<<endl;
@@ -33,10 +34,10 @@ void ToolSignalPowerGenerator::SetToolMapGenerator(ToolMapGenerator *map)
 //---------------------------
 // Public : compute
 //---------------------------
-double ToolSignalPowerGenerator::GetSignalPower(double S_node, vector<double> A_anchor, vector<double> A_node)
+double ToolSignalPowerGenerator::GetSignalPowerStrength_dBm(double S_node, vector<double> A_anchor, vector<double> A_node)
 {
-	// S_node : Signal Power at the node
-	// A_anchor : position of the anchor , i.e. Beacon
+	// S_node : Signal Power at the node, dBm
+	// A_anchor : position of the anchor 
 	// A_anchor : x, y, z; for 2D and 3D
 	// A_node : position of the node
 	// A_node : x, y, z; for 2D and 3D
@@ -102,7 +103,7 @@ double ToolSignalPowerGenerator::GetSignalPower(double S_node, vector<double> A_
 	//
 	// step 3 : compute the Factor
 	//
-	// 1/(4.*PI*distance^2)
+	// 1/(4.*PI*delta^2)
 	double distance2 =      (A_anchor[0]-A_node[0])*(A_anchor[0]-A_node[0]);
 	distance2 = distance2 + (A_anchor[1]-A_node[1])*(A_anchor[1]-A_node[1]);
 	distance2 = distance2 + (A_anchor[2]-A_node[2])*(A_anchor[2]-A_node[2]);
@@ -117,9 +118,10 @@ double ToolSignalPowerGenerator::GetSignalPower(double S_node, vector<double> A_
 	//
 	// step 4 : compute power at the anchor
 	//
-	//double Power_anchor = 
-	double S_anchor = S_node * E_ * exp(integral);
+	double e = 2.718;
+	double S_anchor = S_node + 10.*log(E_) + 10.*log(e)*integral;
 
+	/*
 	// debug
 	cout<<"------------------------------------------------"<<endl;
 	cout<<"ToolSignalPowerGenerator::GetSignalPower"<<endl;
@@ -129,6 +131,7 @@ double ToolSignalPowerGenerator::GetSignalPower(double S_node, vector<double> A_
 	cout<<"Power Node : "<<S_node<<endl;
 	cout<<"Power Anchor : "<<S_anchor<<endl;
 	cout<<"------------------------------------------------"<<endl;
+	*/
 
 	return S_anchor;
 }

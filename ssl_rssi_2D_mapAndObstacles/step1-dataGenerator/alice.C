@@ -27,40 +27,22 @@ int main()
 
 	for(int i=0;i<Nxs_c.size();i++)
 	{
+		//map->SetSample(0.15,Nxs_c[i],Nys_c[i]);
 		map->SetSample(0.15,Nxs_c[i],Nys_c[i]);
 	}
 	for(int i=0;i<Nxs_a_1.size();i++)
 	{
-		map->SetSample(0.,Nxs_a_1[i],Nys_a_1[i]);
+		map->SetSample(0.15,Nxs_a_1[i],Nys_a_1[i]);
 	}
 	for(int i=0;i<Nxs_a_2.size();i++)
 	{
-		map->SetSample(0.,Nxs_a_2[i],Nys_a_2[i]);
+		map->SetSample(0.15,Nxs_a_2[i],Nys_a_2[i]);
 	}
 
 	map->SetSigma(10);
-
 	map->OutputSamples();
 
-
-	// step 2 : 
-	ToolSignalPowerGenerator * spg = new ToolSignalPowerGenerator("spg");
-	spg->SetToolMapGenerator(map);
-
 	/*
-	vector<double> A_anchor, A_node;
-	A_anchor.push_back(-100);
-	A_anchor.push_back(-100);
-	A_anchor.push_back(0);
-	A_node.push_back(100);
-	A_node.push_back(100);
-	A_node.push_back(0);
-
-	double Power_node = 1e4;
-	double Power_anchor = spg->GetSignalPower(Power_node,A_anchor,A_node);
-	*/
-
-
 	// step 3 : generate anchors and nodes 
 	int NumberAnchors = 20;
 	int NumberNodes = 10;
@@ -92,14 +74,15 @@ int main()
 		A_node.push_back(Data_Ny[NodeID]);
 		A_node.push_back(0);
 
-		double Power_node = 1e4;
-		double Power_anchor = spg->GetSignalPower(Power_node,A_anchor,A_node);
+		double Power_node_ref = 1e4;
+		double Power_anchor = spg->GetSignalPowerStrength_dBm(Power_node,A_anchor,A_node);
 
 		write<<AnchorID<<" "<<A_anchor[0]<<" "<<A_anchor[1]<<" "<<A_anchor[2]<<" "<<Power_anchor<<" ";
 		write<<NodeID<<" "<<A_node[0]<<" "<<A_node[1]<<" "<<A_node[2]<<" "<<Power_node<<endl;
 	}
 
 	write.close();
+	*/
 
 
 	return 1;

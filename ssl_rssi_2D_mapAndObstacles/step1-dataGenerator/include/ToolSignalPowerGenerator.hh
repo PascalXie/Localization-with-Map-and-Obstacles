@@ -24,7 +24,7 @@ class ToolSignalPowerGenerator
 		void SetToolMapGenerator(ToolMapGenerator *map);
 
 		// compute
-		double GetSignalPower(double S_node, vector<double> A_anchor, vector<double> A_node);
+		double GetSignalPowerStrength_dBm(double S_node, vector<double> A_anchor, vector<double> A_node);
 
     private:
 		string name_;
