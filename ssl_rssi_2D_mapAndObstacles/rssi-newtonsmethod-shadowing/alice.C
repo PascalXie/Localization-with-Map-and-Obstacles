@@ -20,6 +20,11 @@
 
 using namespace std;
 
+double Power_node;
+double Power_ref;
+double PathLossExponent;
+double d0;
+
 bool PowerRSSI_residualTest();
 bool PowerRSSI();
 int RSSI();
@@ -28,6 +33,29 @@ int main()
 {
 	cout<<"Hello "<<endl;
 
+	//
+	string filename = "../Data_PathLossExponent.txt";
+	ifstream file(filename.c_str());
+
+	if(file.fail())
+	{
+		cout<<"Can not find the file \" "<<filename<<" \""<<endl;
+		return 0;
+	}
+
+	string temp;
+
+	file>>temp>>Power_node;
+	file>>temp>>Power_ref;
+	file>>temp>>PathLossExponent;
+	file>>temp>>d0;
+
+	cout<<"Power_node "<<Power_node<<endl;
+	cout<<"Power_ref "<<Power_ref<<endl;
+	cout<<"PathLossExponent "<<PathLossExponent<<endl;
+	cout<<"d0 "<<d0<<endl;
+
+	//
 	//bool isBuild1Good = PowerRSSI_residualTest();
 	bool isBuildGood = PowerRSSI();
 
@@ -36,20 +64,26 @@ int main()
 
 bool PowerRSSI_residualTest()
 {
-	int NumberNodes = 1;
-	int observationsSize = 2+2*NumberNodes;
+	int NumberNodes = 2;
+	int observationsSize = 4+2*NumberNodes;
 	int varialbeSize = 2*NumberNodes;
 	int residualSize = 1;
 
 	vector<double> obs;
-	obs.push_back(-107.433);
-	obs.push_back(20);
-	obs.push_back(-32.1378);
-	obs.push_back(99.8509);
+	obs.push_back(-38.4748);
+	obs.push_back(Power_ref);
+	obs.push_back(-44.8991);
+	obs.push_back(Power_ref);
+	obs.push_back(PathLossExponent);
+	obs.push_back(d0);
+	obs.push_back(-45.3566);
+	obs.push_back(84.0258);
 
 	vector<double> variables;
-	variables.push_back(-26.5439);
-	variables.push_back(43.8285);
+	variables.push_back(-93.8696);
+	variables.push_back(27.0384);
+	variables.push_back(46.2762);
+	variables.push_back(-43.2151);
 
 	vector<double> residual;
 
@@ -119,7 +153,7 @@ bool PowerRSSI()
 	//
 	// Optimization 
 	//
-	int observationsSize = 2 + 2*NumberNodes;
+	int observationsSize = 4 + 2*NumberNodes;
 	int residualSize = 1;
 	int varialbeSize = 2*NumberNodes;
 
@@ -146,9 +180,11 @@ bool PowerRSSI()
 			int NodeID = j;
 			int S_anchorObID = AnchorID*NumberNodes + NodeID;
 			observation_current.push_back(S_anchors[S_anchorObID]);
-			observation_current.push_back(S_nodes[S_anchorObID]);
+			observation_current.push_back(Power_ref);
 		}
 		int ID = AnchorID*NumberNodes + 0 ;
+		observation_current.push_back(PathLossExponent);
+		observation_current.push_back(d0);
 		observation_current.push_back(axs[ID]);
 		observation_current.push_back(ays[ID]);
 		costFunction->AddResidualBlock(observation_current);
@@ -164,7 +200,7 @@ bool PowerRSSI()
 	manager->SetUserReferencedLength(UserReferencedLength);
 
 	// 
-	double UserReferencedEpsilon = 1e-5;
+	double UserReferencedEpsilon = 1e-7;
 	manager->SetUserEpsilonForTerminating(UserReferencedEpsilon);
 
 	// initialize

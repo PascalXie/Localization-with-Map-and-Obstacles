@@ -12,6 +12,7 @@ PolyResidualBlockFunction::PolyResidualBlockFunction(string name, vector<double>
 	observations_.clear();
 	observations_ = observations;
 
+	/*
 	// Build map and signal power generators
 	map_ = new ToolMapGenerator("Map","3D"); 
 	map_->SetSigma(10); 
@@ -20,6 +21,7 @@ PolyResidualBlockFunction::PolyResidualBlockFunction(string name, vector<double>
 	spg_ = new ToolSignalPowerGenerator("spg");
 	spg_->SetToolMapGenerator(map_); 
 	spg_->SetFactor(1e-1);
+	*/
 }
 
 //-------------------------
@@ -48,11 +50,13 @@ bool PolyResidualBlockFunction::ResidualFunction(vector<double> variables, vecto
 	}
 
 	// observations_[0] : S_ao, anchor observed power, by node 1
-	// observations_[1] : S_n, node power, by node 1 
+	// observations_[1] : S_ref, referenced power, by node 1 
 	// observations_[2] : S_ao, anchor observed power, by node 2
-	// observations_[3] : S_n, node power, by node 2 
-	// observations_[4] : ax , anchor location x
-	// observations_[5] : ay , anchor location y
+	// observations_[3] : S_ref, referenced power, by node 2 
+	// observations_[4] : PathLossExponent, PathLossExponent 
+	// observations_[5] : d_0, referenced distance
+	// observations_[6] : ax , anchor location x
+	// observations_[7] : ay , anchor location y
 
 	// varialbles[0] : xx, node location x, node 1
 	// varialbles[1] : xy, node location y, node 1
@@ -72,15 +76,14 @@ bool PolyResidualBlockFunction::ResidualFunction(vector<double> variables, vecto
 		return false;
 	}
 
+	// Shadowing Parameters
+	double PathLossExponent = observations_[SizeObservations_-4];
+	double d_0 = observations_[SizeObservations_-3];
+
 	// anchor postion
 	double ax = observations_[SizeObservations_-2];
 	double ay = observations_[SizeObservations_-1];
 	double az = 0;
-
-	vector<double> A_Anchor; // position of the anchor
-	A_Anchor.push_back(ax);
-	A_Anchor.push_back(ay);
-	A_Anchor.push_back(az);
 
 	// power
 	double residual_0 = 0;
@@ -89,21 +92,18 @@ bool PolyResidualBlockFunction::ResidualFunction(vector<double> variables, vecto
 		int NodeID = i;
 
 		int obsID = 0 + NodeID*2;  // signal power observed
-		int souID = 1 + NodeID*2; // signal power at the source, i.e. the node
+		int souID = 1 + NodeID*2; // referecend signal power
 
 		double S_ao = observations_[obsID]; // the observed signal strength for anchor
-		double S_node = observations_[souID]; // signal power at the anchor
+		double S_ref = observations_[souID]; // referenced signal power 
 
 		// target node position
 		double xx = variables[obsID];
 		double xy = variables[souID];
+		double xz = 0;
 
-		vector<double> A_Node; // position of the node 
-		A_Node.push_back(xx);
-		A_Node.push_back(xy);
-		A_Node.push_back(0);
-
-		double S_a = spg_->GetSignalPowerStrength_dBm(S_node,A_Anchor,A_Node);
+		double d = sqrt((ax-xx)*(ax-xx)+(ay-xy)*(ay-xy)+(az-xz)*(az-xz));
+		double S_a = S_ref - 10.*PathLossExponent*log10(d/d_0);
 
 		double residual_node = sqrt((S_ao-S_a)*(S_ao-S_a));
 		residual_0 += residual_node;
