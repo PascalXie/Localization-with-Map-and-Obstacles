@@ -1,0 +1,4 @@
+Power_node 20
+Power_ref -0.992099
+PathLossExponent 1.99995
+d0 1
