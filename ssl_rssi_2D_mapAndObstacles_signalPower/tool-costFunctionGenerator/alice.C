@@ -1,0 +1,361 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <fstream>
+
+#include "UserCostFunction.hh"
+#include "SteepestCostFunction.hh"
+#include "NewtonsCostFunction.hh"
+
+#include "UserResidualBlockFunction.hh"
+#include "PolyResidualBlockFunction.hh"
+
+#include "UserOptimizationManager.hh"
+#include "SteepestOptimizationManager.hh"
+#include "NewtonsOptimizationManager.hh"
+
+#include "ToolMapGenerator.hh"
+#include "ToolSignalPowerGenerator.hh"
+
+
+using namespace std;
+
+bool PowerRSSI_residualTest();
+bool PowerRSSI_costFunction();
+int RSSI();
+
+int main()
+{
+	cout<<"Hello "<<endl;
+
+	// Build map and signal power generators
+	ToolMapGenerator *map_ = new ToolMapGenerator("Map","2D"); 
+	map_->ImportSamples(); 
+
+	ToolSignalPowerGenerator *spg_ = new ToolSignalPowerGenerator("spg");
+	spg_->SetToolMapGenerator(map_); 
+	spg_->SetFactor(1e-1);
+
+	int bin[3] = {100,100,1};
+	double min[3] = {-100,-100,0};
+	double max[3] = {100,100,0};
+	map_->GetMap(bin[0],min[0],max[0],bin[1],min[1],max[1]);
+
+	bool isBuildGood = PowerRSSI_costFunction();
+
+	return 1;
+}
+
+bool PowerRSSI_residualTest()
+{
+	int observationsSize = 4;
+	int varialbeSize = 2;
+	int residualSize = 1;
+
+	vector<double> obs;
+	obs.push_back(1.88945e-16);
+	obs.push_back(10000);
+	obs.push_back(-82.4191);
+	obs.push_back(48.3789);
+
+	vector<double> variables;
+	variables.push_back(84.6693);
+	variables.push_back(56.9547);
+
+	vector<double> residual;
+
+	PolyResidualBlockFunction *poly = new PolyResidualBlockFunction("poly",obs,observationsSize,varialbeSize,residualSize);
+	bool isPolyGood = poly->ResidualFunction(variables,residual);
+
+	cout<<"Residual "<<residual[0]<<endl;
+
+	return true;
+}
+
+bool PowerRSSI_costFunction()
+{
+	string filename = "../observations.txt";
+	ifstream file(filename.c_str());
+
+
+	if(file.fail())
+	{
+		cout<<"Can not find the file \" "<<filename<<" \""<<endl;
+		return 0;
+	}
+
+	int NumberAnchors = 0;
+	int NumberNodes = 0;
+	string temp;
+	file>>temp>>NumberAnchors>>temp>>NumberNodes;
+	cout<<"NumberAnchors "<<NumberAnchors<<" ; NumberNodes "<<NumberNodes<<endl;
+
+	int AnchorID = 0;
+	int NodeID = 0;
+	double ax = 0; 
+	double ay = 0; 
+	double az = 0;
+	double xx = 0;
+	double xy = 0;
+	double xz = 0;
+	double S_anchorOb = 0; // signal Power
+	double S_node = 0; // signal power
+
+	vector<int> AnchorIDs;
+	vector<int> NodeIDs;
+	vector<double> S_anchors, S_nodes;
+	vector<double> axs, ays, xxs, xys;
+
+	while(!file.eof())
+	{
+		file>>AnchorID>>ax>>ay>>az>>S_anchorOb>>NodeID>>xx>>xy>>xz>>S_node;
+
+		if(file.eof()) break;
+
+		cout<<"AnchorID "<<AnchorID<<", ax "<<ax<<", ay "<<ay<<", az "<<az<<"; Power "<<S_anchorOb<<endl;
+		cout<<"NodeID "<<NodeID<<", xx "<<xx<<", xy "<<xy<<", xz "<<xz<<"; Power "<<S_node<<endl;
+
+		AnchorIDs.push_back(AnchorID);
+		NodeIDs.push_back(NodeID);
+		axs.push_back(ax);
+		ays.push_back(ay);
+		xxs.push_back(xx);
+		xys.push_back(xy);
+		S_anchors.push_back(S_anchorOb);
+		S_nodes.push_back(S_node);
+	}
+
+	file.close();
+
+
+	//
+	// Optimization 
+	//
+	int observationsSize = 2 + 2*NumberNodes;
+	int residualSize = 1;
+	int varialbeSize = 2*NumberNodes;
+
+	UserOptimizationManager * manager = new NewtonsOptimizationManager("NewtonsMethod",observationsSize,varialbeSize,residualSize);
+
+	// set variables
+	vector<double> variables;
+	for(int i=0;i<varialbeSize;i++)
+	{
+		variables.push_back(0.);
+	}
+	manager->SetUserInitialization(variables);
+
+	// set cost function
+	UserCostFunction* costFunction = new NewtonsCostFunction("costFunction",observationsSize,varialbeSize,residualSize);
+
+	// get observations
+	for(int i=0;i<NumberAnchors;i++)
+	{
+		int AnchorID = i;
+		vector<double> observation_current;
+		for(int j=0;j<NumberNodes;j++)
+		{
+			int NodeID = j;
+			int S_anchorObID = AnchorID*NumberNodes + NodeID;
+			observation_current.push_back(S_anchors[S_anchorObID]);
+			observation_current.push_back(S_nodes[S_anchorObID]);
+		}
+		int ID = AnchorID*NumberNodes + 0 ;
+		observation_current.push_back(axs[ID]);
+		observation_current.push_back(ays[ID]);
+		costFunction->AddResidualBlock(observation_current);
+	}
+
+	//
+	cout<<" "<<endl;
+	cout<<"alice SetUserInitialization"<<endl;
+	manager->SetUserInitialization(costFunction);
+
+	//
+	double UserReferencedLength = 70.;
+	manager->SetUserReferencedLength(UserReferencedLength);
+
+	// 
+	double UserReferencedEpsilon = 1e2;
+	manager->SetUserEpsilonForTerminating(UserReferencedEpsilon);
+
+	// Cost function
+	ofstream write("log_costFunction.txt");
+
+	int bin[2] = {100,100};
+	double min[2] = {-100,-100};
+	double max[2] = {100,100};
+	double binWidth[2];
+	binWidth[0] = (max[0]-min[0])/double(bin[0]);
+	binWidth[1] = (max[1]-min[1])/double(bin[1]);
+
+	for(int j=0;j<bin[1];j++)
+	for(int i=0;i<bin[0];i++)
+	{
+		int xID = i;
+		int yID = j;
+
+		double x = min[0] + (double(xID)+0.5)*binWidth[0];
+		double y = min[1] + (double(yID)+0.5)*binWidth[1];
+
+		vector<double> variable;
+		vector<double> CostFunction;
+
+		variable.push_back(x);
+		variable.push_back(y);
+
+		costFunction->CostFunction(variable,CostFunction);
+
+		cout<<x<<" "<<y<<" "<<CostFunction[0]<<endl;
+		write<<x<<" "<<y<<" "<<CostFunction[0]<<endl;
+	}
+
+	write.close();
+
+
+	return true;
+}
+
+int RSSI()
+{
+	string filename = "../observations.txt";
+	ifstream file(filename.c_str());
+
+	if(file.fail())
+	{
+		cout<<"Can not find the file \" "<<filename<<" \""<<endl;
+		return 0;
+	}
+
+	int NumberAnchors = 0;
+	int NumberNodes = 0;
+	string temp;
+	file>>temp>>NumberAnchors>>temp>>NumberNodes;
+	cout<<"NumberAnchors "<<NumberAnchors<<" ; NumberNodes "<<NumberNodes<<endl;
+
+	int AnchorID = 0;
+	int NodeID = 0;
+	double distanceSquared = 0;
+	double ax = 0; 
+	double ay = 0; 
+	double xx = 0;
+	double xy = 0;
+
+	vector<int> AnchorIDs;
+	vector<int> NodeIDs;
+	vector<double> distancesSquared;
+	vector<double> axs, ays, xxs, xys;
+
+	while(!file.eof())
+	{
+		file>>AnchorID>>ax>>ay>>NodeID>>xx>>xy>>distanceSquared;
+
+		if(file.eof()) break;
+
+		cout<<"Distance squared "<<distanceSquared<<": Anchor ID "<<AnchorID<<", loc "<<ax<<", "<<ay<<"; Node ID "<<NodeID<<", loc "<<xx<<", "<<xy<<endl;
+
+		AnchorIDs.push_back(AnchorID);
+		NodeIDs.push_back(NodeID);
+		distancesSquared.push_back(distanceSquared);
+		axs.push_back(ax);
+		ays.push_back(ay);
+		xxs.push_back(xx);
+		xys.push_back(xy);
+	}
+
+	file.close();
+
+	//// test 
+	//int observationsSize = 2 + NumberNodes;
+	//int residualSize = 1;
+	//int varialbeSize = 2*NumberNodes;
+
+	//vector<double> variables;
+	//variables.push_back(1.);
+	//variables.push_back(2.);
+	//variables.push_back(3.);
+	//variables.push_back(4.);
+
+	//vector<double> observations;
+	//observations.push_back(1307.87);
+	//observations.push_back(3725.57);
+	//observations.push_back(62.4517);
+	//observations.push_back(6.97365);
+	//UserResidualBlockFunction * resi = new PolyResidualBlockFunction("test",observations,observationsSize,varialbeSize,residualSize);
+
+	//vector<double> resiValue;
+	//resi -> ResidualFunction(variables, resiValue);
+
+	//
+	// Optimization 
+	//
+	int observationsSize = 2 + NumberNodes;
+	int residualSize = 1;
+	int varialbeSize = 2*NumberNodes;
+
+	UserOptimizationManager * manager = new NewtonsOptimizationManager("NewtonsMethod",observationsSize,varialbeSize,residualSize);
+
+	// set variables
+	vector<double> variables;
+	for(int i=0;i<varialbeSize;i++)
+	{
+		variables.push_back(0.);
+	}
+	manager->SetUserInitialization(variables);
+
+	// set cost function
+	UserCostFunction* costFunction = new NewtonsCostFunction("costFunction",observationsSize,varialbeSize,residualSize);
+
+	// get observations
+	for(int i=0;i<NumberAnchors;i++)
+	{
+		int AnchorID = i;
+		vector<double> observation_current;
+		for(int j=0;j<NumberNodes;j++)
+		{
+			int NodeID = j;
+			int disID = AnchorID*NumberNodes + NodeID;
+			observation_current.push_back(distancesSquared[disID]);
+		}
+		int ID = AnchorID*NumberNodes + 0 ;
+		observation_current.push_back(axs[ID]);
+		observation_current.push_back(ays[ID]);
+		costFunction->AddResidualBlock(observation_current);
+
+		/*
+		// debug
+		for(int k=0;k<2+NumberNodes;k++)
+		{
+			cout<<"Observation ID "<<k<<"; ";
+			cout<<observation_current[k]<<", ";
+		}
+		cout<<endl;
+
+		UserResidualBlockFunction * resi = new PolyResidualBlockFunction("test",observation_current,observationsSize,varialbeSize,residualSize);
+		vector<double> resiValue;
+		resi -> ResidualFunction(variables, resiValue);
+		*/
+	}
+
+	//
+	cout<<" "<<endl;
+	cout<<"alice SetUserInitialization"<<endl;
+	manager->SetUserInitialization(costFunction);
+
+	//
+	double UserReferencedLength = 70.;
+	manager->SetUserReferencedLength(UserReferencedLength);
+
+	// 
+	double UserReferencedEpsilon = 5e3;
+	manager->SetUserEpsilonForTerminating(UserReferencedEpsilon);
+
+
+	// initialize
+	cout<<" "<<endl;
+	cout<<"Initialize "<<endl;
+	manager->Initialize();
+
+
+	return 1;
+}
