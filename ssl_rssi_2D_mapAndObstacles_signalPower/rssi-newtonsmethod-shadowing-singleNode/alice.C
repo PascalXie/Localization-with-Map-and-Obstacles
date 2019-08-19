@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <random>
 
 #include "UserCostFunction.hh"
 #include "SteepestCostFunction.hh"
@@ -90,6 +91,13 @@ int main()
 	double S_anchorOb = 0; // signal Power
 	double S_node = 0; // signal power
 
+	// random for signal noise
+	default_random_engine engine_(time(0));
+	double mean = 0; // Expectation
+	double sigma = 12.; // standard deviation, dBm, {4, 8 ,12}
+	normal_distribution<double> normal(mean, sigma);
+	cout<<"random for signal noise : Sigma "<<sigma<<endl;
+
 	while(!file.eof())
 	{
 		file>>AnchorID>>ax>>ay>>az>>S_anchorOb>>NodeID>>xx>>xy>>xz>>S_node;
@@ -98,6 +106,9 @@ int main()
 
 		//cout<<"AnchorID "<<AnchorID<<", ax "<<ax<<", ay "<<ay<<", az "<<az<<"; Power "<<S_anchorOb<<endl;
 		//cout<<"NodeID "<<NodeID<<", xx "<<xx<<", xy "<<xy<<", xz "<<xz<<"; Power "<<S_node<<endl;
+
+		// S_anchorOb randomized 
+		S_anchorOb += normal(engine_);
 
 		AnchorIDs.push_back(AnchorID);
 		NodeIDs.push_back(NodeID);
